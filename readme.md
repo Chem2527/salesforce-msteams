@@ -4,6 +4,17 @@ This guide covers setting up OpenSSL, generating self-signed certificates, and u
 
 ## 📋 Prerequisites
 
+### SCS Server Responsibilities:
+
+- What SCS Server Manages:
+```bash
+Authentication: Who can upload content
+Authorization: What content can be uploaded where
+Storage Orchestration: Where content goes (S3 buckets)
+CDN Integration: How content gets distributed
+Version Management: Content versioning and cleanup
+Security: Access controls and audit logging
+```
 ### Windows Package Manager Setup
 
 Install required tools using Chocolatey:
