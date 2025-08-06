@@ -144,82 +144,51 @@ export ENVIRONMENT_TYPE="prod"
 ```bash
 #!/bin/bash
 
-# Set environment variables
-export MY_USER_CERT="certificates/client.pem"
-export MY_USER_KEY="certificates/client-key.pem"
-export MY_USER_CACERTS="certificates/cacerts.pem"
-export ENVIRONMENT_TYPE="dev"
+set -e
+
+echo "🚀 Building React App"
+npm run build
+
+echo "📦 Uploading using scsCopy"
+
+# Set environment variables for mTLS certificates once
+export MY_USER_CERT=certificates/client.pem
+export MY_USER_KEY=certificates/client-key.pem
+export MY_USER_CACERTS=certificates/cacerts.pem
+export ENVIRONMENT_TYPE=dev
 export FALCON_INSTANCE="dev1-uswest2"
 export SERVICE_NAME="agent-svc-messaging"
 
-# Your upload commands here
-./scsCopyBinary/scsCopy \
-  --debug \
-  --source="your-file.js" \
-  --destination="agent-svc-messaging://path/to/file.js"
+echo "📁 Uploading dist/ directory contents"
+# Upload all files recursively inside dist
+find dist -type f | while read -r file; do
+  echo "  Uploading: $file"
+  # Remove 'dist/' prefix for destination path to maintain structure
+  dest_path=${file#dist/}
+  ./scsCopyBinary/scsCopy \
+    --debug \
+    --source="$file" \
+    --destination="agent-svc-messaging://$dest_path"
+done
+
+echo "🐳 Uploading Dockerfile"
+# Check current directory for Dockerfile
+if [ -f "./Dockerfile" ]; then
+  echo "  Found Dockerfile in current directory"
+  echo "  Uploading: ./Dockerfile"
+  ./scsCopyBinary/scsCopy \
+    --debug \
+    --source="./Dockerfile" \
+    --destination="agent-svc-messaging://Dockerfile"
+else
+  echo "❌ Error: Dockerfile not found in current directory"
+  echo "📍 Current directory: $(pwd)"
+  echo "📋 Available files:"
+  ls -la | grep -E "(Dockerfile|dockerfile)" || echo "   No Dockerfile found"
+  exit 1
+fi
+
+echo "✅ Upload completed successfully"
 ```
 
-## ⚠️ Security Considerations
 
-### For Development/Testing Only
-
-- ❌ **Do NOT use these certificates in production**
-- ❌ **Self-signed certificates are not trusted by SCS servers**
-- ❌ **Keep private keys (`ca-key.pem`, `client-key.pem`) secure**
-
-### For Production Use
-
-- ✅ **Obtain certificates from your organization's Certificate Authority**
-- ✅ **Use certificates specifically issued for SCS access**
-- ✅ **Follow your organization's certificate management policies**
-- ✅ **Ensure certificates have proper Subject Alternative Names (SAN)**
-
-## 🐛 Common Issues
-
-### Certificate Not Trusted Error
-
-```json
-{
-  "error": "x509: certificate signed by unknown authority"
-}
-```
-
-**Cause**: SCS server doesn't trust your self-signed CA  
-**Solution**: Obtain production certificates from authorized CA
-
-### Connection Refused
-
-```json
-{
-  "error": "connection refused"
-}
-```
-
-**Cause**: Network access or incorrect endpoint  
-**Solution**: Verify network connectivity and environment variables
-
-### Certificate Expired
-
-```bash
-# Check certificate validity
-openssl x509 -in certificates/client.pem -dates -noout
-```
-
-**Solution**: Regenerate certificates with longer validity period
-
-## 📚 Additional Resources
-
-- [OpenSSL Documentation](https://www.openssl.org/docs/)
-- [Kubernetes Certificate Management](https://kubernetes.io/docs/concepts/cluster-administration/certificates/)
-- [TLS/SSL Best Practices](https://wiki.mozilla.org/Security/Server_Side_TLS)
-
-## 🤝 Support
-
-For production certificate requests and SCS access:
-1. Contact your platform team
-2. Follow your organization's certificate request process
-3. Ensure proper authorization for environment access
-
----
-
-**Note**: This guide is for development and testing purposes. Always follow your organization's security policies for production deployments.
