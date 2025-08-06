@@ -9,14 +9,12 @@ This guide covers setting up OpenSSL, generating self-signed certificates, and u
 Install required tools using Chocolatey:
 
 ```bash
-# Install OpenSSL
-choco install openssl
 
 # Install kubectl (Kubernetes CLI)
 choco install kubectl
 ```
 
-### Alternative OpenSSL Installation
+###  OpenSSL Installation
 
 If you prefer manual installation, download OpenSSL from:
 - **Windows Binaries**: https://slproweb.com/products/Win32OpenSSL.html
