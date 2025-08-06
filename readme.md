@@ -1,487 +1,227 @@
-# Agentforce Messaging Repository Flow Documentation
+# SCS Certificate Setup and Environment Configuration
 
-A comprehensive guide to understanding the architecture, data flow, and component relationships in the Agentforce Messaging React application.
+This guide covers setting up OpenSSL, generating self-signed certificates, and understanding SCS (Static Content Service) environment endpoints for development and testing purposes.
 
-## 🏗️ Architecture Overview
+## 📋 Prerequisites
 
-The Agentforce Messaging application is a modern React-based chat solution that provides seamless integration with Salesforce's messaging infrastructure. It supports multiple backend adapters, voice communication, and flexible deployment options.
+### Windows Package Manager Setup
 
-### Key Design Principles
-
-- **Modular Architecture**: Clear separation between UI, state management, and service integration
-- **Adapter Pattern**: Pluggable backends for different Salesforce messaging services
-- **Provider System**: React Context-based dependency injection
-- **Cross-Domain Communication**: RPC-based iframe integration
-- **Configuration-Driven**: Runtime configuration for different environments
-
-## 📊 System Architecture Diagram
-
-```mermaid
-graph TD
-    %% User Interface Layer
-    subgraph "UI Layer"
-        A[Main Entry Point<br/>main.tsx] --> B[Chat Component<br/>Chat.tsx]
-        B --> C[ChatWindow<br/>Layout & Messages]
-        B --> D[ChatFAB<br/>Floating Action Button]
-        C --> E[ChatHeader<br/>Title & Controls]
-        C --> F[ChatInput<br/>Message Input]
-        C --> G[ChatMessage<br/>Message Display]
-    end
-
-    %% Provider Layer
-    subgraph "Provider Layer"
-        H[ReduxProvider<br/>State Management] --> I[ConfigurationProvider<br/>UI Configuration]
-        I --> J[ChatProvider<br/>Chat Logic & RPC]
-        J --> K[VoiceProvider<br/>Audio/Voice Features]
-        J --> L[EventDispatcher<br/>Event Handling]
-    end
-
-    %% State Management
-    subgraph "Redux Store"
-        M[Store Index<br/>store/index.ts] --> N[Conversation Slice<br/>Messages & Status]
-        M --> O[Configuration Slice<br/>UI Settings]
-        M --> P[UI Slice<br/>Component State]
-        M --> Q[AppHost Slice<br/>Host Integration]
-    end
-
-    %% Adapter Layer
-    subgraph "Adapter System"
-        R[Adapter Manager<br/>adapters/index.ts] --> S[Configuration Adapter<br/>Settings & Config]
-        R --> T[Conversation Adapter<br/>Message Handling]
-        
-        S --> U[MIAW Configuration<br/>Salesforce MIAW API]
-        S --> V[Agent Configuration<br/>Agentforce API]
-        
-        T --> W[MIAW Conversation<br/>MIAW Messaging]
-        T --> X[Agent Conversation<br/>Agent API + Voice]
-    end
-
-    %% External Services
-    subgraph "External Services"
-        Y[Salesforce MIAW<br/>scrt2_url API]
-        Z[Agentforce API<br/>Domain URL + Endpoints]
-        AA[LiveKit Service<br/>Voice Communication]
-        BB[Parent Host/Window<br/>via RPC Manager]
-    end
-
-    %% Cross-Package Communication
-    subgraph "RPC System"
-        CC[RPC Manager<br/>packages/rpc-manager] --> DD[Host Communication<br/>PostMessage API]
-        CC --> EE[Cross-Domain Events<br/>Session Management]
-    end
-
-    %% Development & Build
-    subgraph "Development Environment"
-        FF[Vite Config<br/>Development Server] --> GG[Local Config<br/>Environment Settings]
-        FF --> HH[Proxy Server<br/>API Proxying]
-        GG --> II[Authentication<br/>Token Management]
-    end
-
-    %% Main Flow Connections
-    A --> H
-    H --> M
-    J --> R
-    J --> CC
-    
-    %% Adapter Connections
-    U --> Y
-    V --> Z
-    X --> AA
-    
-    %% Development Connections
-    FF --> R
-    HH --> Z
-    HH --> Y
-    
-    %% RPC Connections
-    CC --> BB
-    
-    %% Voice Integration
-    K --> AA
-    X --> AA
-```
-
-## 🚀 Application Entry Points
-
-### Production Entry Points
-- **`src/main.tsx`**: Primary production entry point with `initReact()` function
-- **`src/loader.ts`**: Simple loader that initializes the application
-
-### Development Entry Points
-- **`src/dev.tsx`**: Development mode with debugging features
-- **`src/frameDev.tsx`**: iframe development mode
-- **`src/frameHost.tsx`**: iframe host integration
-
-### Entry Point Flow
-```
-Browser Load → Entry Point → initReact() → Provider Chain → Chat Component
-```
-
-## 🧩 Core Components
-
-### UI Layer Components
-
-| Component | Purpose | Key Features |
-|-----------|---------|--------------|
-| `Chat.tsx` | Main chat container | Layout mode detection, FAB/inline switching |
-| `ChatWindow.tsx` | Conversation interface | Message list, scrolling, responsive design |
-| `ChatFAB.tsx` | Floating action button | Minimizable chat interface |
-| `ChatInput.tsx` | Message input | Text input, send button, typing indicators |
-| `ChatMessage.tsx` | Individual messages | Agent/user messages, timestamps, formatting |
-| `ChatHeader.tsx` | Chat header bar | Title, controls, status indicators |
-
-### Provider System
-
-| Provider | Responsibility | Key Features |
-|----------|----------------|--------------|
-| `ReduxProvider` | State management | Redux store, persistence, middleware |
-| `ConfigurationProvider` | UI configuration | Theming, labels, feature flags |
-| `ChatProvider` | Chat orchestration | Message handling, RPC, session management |
-| `VoiceProvider` | Audio features | LiveKit integration, voice mode |
-| `EventDispatcher` | Event broadcasting | Custom events, host communication |
-
-## 🗄️ State Management (Redux)
-
-### Store Structure
-
-```
-store/
-├── index.ts              # Store configuration
-├── slices/
-│   ├── conversation.ts   # Messages, participants, status
-│   ├── configuration.ts  # UI settings, labels
-│   ├── ui.ts            # Component state, modals
-│   └── apphost.ts       # Host integration
-├── middleware/
-│   ├── asyncDispatch.ts # Async action handling
-│   └── conversationDataMiddleware.ts # Data sync
-├── persistence.ts       # State persistence
-└── sessionSync.ts       # Cross-tab synchronization
-```
-
-### Key State Slices
-
-#### Conversation Slice
-```typescript
-interface ConversationState {
-  conversationId: string | null;
-  status: ConversationStatus;
-  entries: ConversationEntry[];
-  participants: Participant[];
-  isVoiceMode: boolean;
-  isLoading: boolean;
-}
-```
-
-#### Configuration Slice
-```typescript
-interface ConfigurationState {
-  labels: Record<string, string>;
-  allowVoiceMode: boolean;
-  theme: UIConfiguration;
-}
-```
-
-## 🔌 Adapter System
-
-The adapter pattern enables multiple backend integrations:
-
-### Adapter Types
-
-#### Configuration Adapter
-```typescript
-interface ConfigurationAdapter {
-  adapterType: "configuration";
-  getConversationId: () => string | undefined;
-}
-```
-
-#### Conversation Adapter
-```typescript
-interface ConversationAdapter {
-  adapterType: "conversation";
-  startConversation: () => Promise<string>;
-  endConversation: () => VoidPromise;
-  sendMessage: (messageId: string, messageText: string) => Promise<unknown>;
-  setIsTyping: (isTyping: boolean) => VoidPromise;
-}
-```
-
-### Current Implementations
-
-#### MIAW Adapter
-- **Purpose**: Salesforce MIAW (Messaging in a Window) integration
-- **API**: SCRT2 endpoints
-- **Features**: Basic messaging, configuration
-- **Files**: `src/adapters/miaw/`
-
-#### Agent Adapter  
-- **Purpose**: Agentforce API integration
-- **API**: Agentforce domain endpoints
-- **Features**: Advanced messaging, voice support, streaming
-- **Files**: `src/adapters/agent/`
-
-### Adapter Lifecycle
-
-```
-1. Configuration loads → 2. Adapter selected → 3. Factory creates instance → 
-4. Registers with Redux → 5. Handles messages → 6. Cleanup on destroy
-```
-
-## 📡 Data Flow
-
-### Message Send Flow
-
-```
-User Input → ChatInput → Redux Action → Middleware → Adapter → External API
-                                                        ↓
-UI Update ← Redux State ← Adapter Event ← API Response ←
-```
-
-### Message Receive Flow
-
-```
-External API → Adapter EventSource → Adapter Event → Redux Action → State Update → UI Render
-```
-
-### Configuration Flow
-
-```
-App Start → Local Config → Adapter Selection → Adapter Creation → Redux Registration → UI Ready
-```
-
-## 🎙️ Voice Integration
-
-### LiveKit Integration
-
-The application supports real-time voice communication through LiveKit:
-
-```
-Voice Mode → LiveKit Token → Room Connection → Audio Stream → Agent Integration
-```
-
-### Voice Components
-- **`VoiceProvider.tsx`**: Voice state management
-- **`ChatVoiceMode.tsx`**: Voice UI controls
-- **`useAgentLiveKit.ts`**: LiveKit hook
-- **`MicrophoneVisualization.tsx`**: Audio visualization
-
-## 🌐 RPC Manager (Cross-Domain Communication)
-
-### Purpose
-Enables secure communication between iframe and parent window for embedded scenarios.
-
-### Key Features
-- **Bidirectional RPC**: Both host and client can call each other
-- **Cross-domain messaging**: Uses `postMessage` API
-- **Connection management**: Automatic connection detection
-- **Error handling**: Configurable error handlers
-- **Session management**: Handle session lifecycle
-
-### Usage Patterns
-```typescript
-// Host side
-rpcHost.registerHandler("connect", async (event) => {
-  return { allowed: true };
-});
-
-// Client side  
-const result = await rpcClient.callRemote("connect", { type: "chat" });
-```
-
-## ⚙️ Development Environment
-
-### Vite Configuration
-
-The development environment includes:
-
-- **Hot Module Replacement (HMR)**: Instant updates during development
-- **Proxy Server**: Routes API calls through development server
-- **Token Management**: Automatic OAuth/Bootstrap token handling
-- **HTTPS Support**: Production-like HTTPS testing
-- **Multi-entry builds**: Support for iframe and standalone modes
-
-### Local Configuration
-
-Configuration is managed through `.local-config` files:
-
-```yaml
-adapter: "agent"  # or "miaw"
-use_iframe: true
-agent_api:
-  agent_id: "your-agent-id"
-  domain_url: "https://your-salesforce-domain.com"
-  enable_streaming: true
-proxy:
-  enable: true
-  token_auto_refresh: true
-livekit:
-  livekit_url: "wss://your-livekit-server.com"
-```
-
-## 🚀 Build & Deployment
-
-### Build Targets
+Install required tools using Chocolatey:
 
 ```bash
-# Development
-yarn dev                 # Start development server
+# Install OpenSSL
+choco install openssl
 
-# Production
-yarn build              # Build for production
-yarn build:app          # Build application only
-yarn build:packages     # Build RPC manager package
-
-# Testing
-yarn test               # Run tests
-yarn test:coverage      # Run with coverage
+# Install kubectl (Kubernetes CLI)
+choco install kubectl
 ```
 
-### Output Formats
+### Alternative OpenSSL Installation
 
-- **ES Modules**: Modern bundlers
-- **UMD**: Universal module definition
-- **IIFE**: Browser globals
-- **TypeScript Definitions**: Type support
+If you prefer manual installation, download OpenSSL from:
+- **Windows Binaries**: https://slproweb.com/products/Win32OpenSSL.html
 
-## 📁 Project Structure
+## 🔐 Certificate Generation
 
-```
-src/
-├── components/         # React UI components
-│   ├── Chat.tsx       # Main chat container
-│   ├── ChatWindow.tsx # Conversation interface
-│   └── ui/            # Reusable UI components
-├── providers/         # React Context providers
-├── store/             # Redux state management
-│   ├── slices/        # Redux state slices
-│   └── middleware/    # Custom middleware
-├── adapters/          # Service integration layer
-│   ├── agent/         # Agentforce adapter
-│   ├── miaw/          # MIAW adapter
-│   └── index.ts       # Adapter manager
-├── hooks/             # Custom React hooks
-├── utils/             # Utility functions
-├── types/             # TypeScript definitions
-└── @types/            # Global type definitions
+### ⚠️ Important Warning
 
-packages/
-└── rpc-manager/       # Cross-domain communication
-    ├── rpc.ts         # Core RPC implementation
-    └── examples/      # Usage examples
+**The certificates generated below are self-signed and will NOT work with production SCS servers** because they are not trusted by the server's Certificate Authority. These are for **development and testing purposes only**.
 
-public/                # Static assets
-dist/                  # Build output
+### 1. Generate Certificate Authority (CA)
+
+```bash
+# Generate CA private key
+openssl genrsa -out ca-key.pem 2048
+
+# Generate CA certificate (valid for 365 days)
+openssl req -new -x509 -days 365 -key ca-key.pem -out cacerts.pem -subj "/C=US/ST=CA/L=SanFrancisco/O=employee/CN=CA"
 ```
 
-## 🔧 Key Technologies
+### 2. Generate Client Private Key
 
-- **React 19**: UI framework with latest features
-- **Redux Toolkit**: Predictable state management
-- **TypeScript**: Type safety and developer experience
-- **Vite**: Fast build tool and development server
-- **Tailwind CSS**: Utility-first styling
-- **Vitest**: Testing framework
-- **LiveKit**: Real-time communication
-- **PostMessage API**: Cross-domain communication
-
-## 🔗 Integration Points
-
-### Salesforce Integration
-- **Bootstrap API**: Authentication and initialization
-- **Agentforce API**: Agent messaging and configuration
-- **MIAW API**: Salesforce messaging infrastructure
-
-### External Services
-- **LiveKit**: Voice/video communication
-- **OAuth2**: Authentication
-- **EventSource**: Server-sent events for real-time updates
-
-### Host Integration
-- **iframe**: Sandboxed embedding
-- **RPC**: Bidirectional communication
-- **Event System**: Custom event dispatching
-
-## 📚 Usage Examples
-
-### Basic Initialization
-
-```typescript
-import { initReact } from './main';
-
-// Initialize chat
-const rerender = initReact(document.getElementById('root'), {
-  enableRPC: true,
-  uiConfiguration: {
-    theme: 'light',
-    primaryColor: '#1976d2'
-  }
-});
+```bash
+# Generate client private key (2048-bit RSA)
+openssl genrsa -out client-key.pem 2048
 ```
 
-### Custom Adapter
+### 3. Create Client Certificate Signing Request (CSR)
 
-```typescript
-// Create custom adapter definition
-const customAdapter: AdapterDefinition = {
-  name: 'custom',
-  supports: ['configuration', 'conversation'],
-  adapters: {
-    configuration: customConfigAdapter,
-    conversation: customConversationAdapter
-  }
-};
-
-// Use with the application
-configureAdapters(customAdapter, adapterListener);
+```bash
+# Generate client certificate signing request
+openssl req -new -key client-key.pem -out client.csr -subj "/C=US/ST=CA/L=SanFrancisco/O=employee/CN=client"
 ```
 
-### RPC Integration
+### 4. Sign Client Certificate with CA
 
-```typescript
-// Host integration
-const rpcManager = new RPCManager({
-  isHost: true,
-  targetOrigin: 'https://chat.salesforce.com'
-});
-
-rpcManager.registerHandler('sessionEnd', async () => {
-  // Handle session termination
-  return { success: true };
-});
+```bash
+# Sign the client certificate with your CA (valid for 365 days)
+openssl x509 -req -in client.csr -CA cacerts.pem -CAkey ca-key.pem -CAcreateserial -out client.pem -days 365
 ```
 
-## 🎯 Best Practices
+### 5. Verify Generated Certificates
 
-1. **State Management**: Use Redux for global state, local state for component-specific data
-2. **Type Safety**: Leverage TypeScript for better developer experience
-3. **Component Design**: Keep components focused and reusable
-4. **Error Handling**: Implement comprehensive error boundaries
-5. **Performance**: Use React.memo and useMemo for optimization
-6. **Testing**: Write unit tests for business logic and integration tests for flows
+```bash
+# Verify client certificate
+openssl verify -CAfile cacerts.pem client.pem
 
-## 🐛 Debugging
+# Check certificate details
+openssl x509 -in client.pem -text -noout
 
-### Development Tools
-- **Redux DevTools**: State inspection and time travel
-- **React Developer Tools**: Component tree inspection
-- **Browser DevTools**: Network, console, and performance debugging
+# Check certificate dates
+openssl x509 -in client.pem -dates -noout
+```
 
-### Common Issues
-- **Adapter not found**: Check local configuration and adapter registration
-- **RPC connection failed**: Verify origin settings and iframe setup
-- **Voice not working**: Check LiveKit configuration and browser permissions
+## 📁 Generated Certificate Files
 
-## 📝 Contributing
+After completing the steps above, you should have these files:
 
-When contributing to this repository:
+```
+certificates/
+├── cacerts.pem      # Certificate Authority (CA) certificate
+├── ca-key.pem       # CA private key (keep secure!)
+├── client.pem       # Client certificate
+├── client-key.pem   # Client private key
+└── client.csr       # Certificate signing request (can be deleted)
+```
 
-1. **Follow TypeScript conventions**: Use proper typing
-2. **Update tests**: Add/modify tests for new functionality
-3. **Document changes**: Update relevant documentation
-4. **Check linting**: Run `yarn lint` before committing
-5. **Test thoroughly**: Run `yarn test` and manual testing
+## 🏗️ SCS Environment Configuration
+
+### Environment Endpoint Mapping
+
+| FALCON_INSTANCE | ENVIRONMENT_TYPE | Functional Domain | SCS Endpoint |
+|-----------------|------------------|-------------------|--------------|
+| `dev1-uswest2` | `dev` | `core002` | `scs-slb.sfproxy.core002.dev1-uswest2.aws.sfdc.cl:7443` |
+| `test1-uswest2` | `test` | `core3` | `scs-slb.sfproxy.core3.test1-uswest2.aws.sfdc.cl:7443` |
+| `aws-stage1-useast2` | `stage` | `core1` | `scs-slb.sfproxy.core1.aws-stage1-useast2.aws.sfdc.cl:7443` |
+| `aws-prod0-uswest2` | `prod` | `core1` | `scs-slb.sfproxy.core1.aws-prod0-uswest2.aws.sfdc.cl:7443` |
+
+### Environment Variables Setup
+
+```bash
+# Development Environment
+export FALCON_INSTANCE="dev1-uswest2"
+export ENVIRONMENT_TYPE="dev"
+export SERVICE_NAME="agent-svc-messaging"
+
+# Certificate Paths
+export MY_USER_CERT="certificates/client.pem"
+export MY_USER_KEY="certificates/client-key.pem"
+export MY_USER_CACERTS="certificates/cacerts.pem"
+```
+
+### Testing Different Environments
+
+#### Development
+```bash
+export FALCON_INSTANCE="dev1-uswest2"
+export ENVIRONMENT_TYPE="dev"
+# Connects to: scs-slb.sfproxy.core002.dev1-uswest2.aws.sfdc.cl:7443
+```
+
+#### Test
+```bash
+export FALCON_INSTANCE="test1-uswest2"
+export ENVIRONMENT_TYPE="test"
+# Connects to: scs-slb.sfproxy.core3.test1-uswest2.aws.sfdc.cl:7443
+```
+
+#### Staging
+```bash
+export FALCON_INSTANCE="aws-stage1-useast2"
+export ENVIRONMENT_TYPE="stage"
+# Connects to: scs-slb.sfproxy.core1.aws-stage1-useast2.aws.sfdc.cl:7443
+```
+
+#### Production
+```bash
+export FALCON_INSTANCE="aws-prod0-uswest2"
+export ENVIRONMENT_TYPE="prod"
+# Connects to: scs-slb.sfproxy.core1.aws-prod0-uswest2.aws.sfdc.cl:7443
+```
+
+## 🔧 Usage Example
+
+### Sample Upload Script Configuration
+
+```bash
+#!/bin/bash
+
+# Set environment variables
+export MY_USER_CERT="certificates/client.pem"
+export MY_USER_KEY="certificates/client-key.pem"
+export MY_USER_CACERTS="certificates/cacerts.pem"
+export ENVIRONMENT_TYPE="dev"
+export FALCON_INSTANCE="dev1-uswest2"
+export SERVICE_NAME="agent-svc-messaging"
+
+# Your upload commands here
+./scsCopyBinary/scsCopy \
+  --debug \
+  --source="your-file.js" \
+  --destination="agent-svc-messaging://path/to/file.js"
+```
+
+## ⚠️ Security Considerations
+
+### For Development/Testing Only
+
+- ❌ **Do NOT use these certificates in production**
+- ❌ **Self-signed certificates are not trusted by SCS servers**
+- ❌ **Keep private keys (`ca-key.pem`, `client-key.pem`) secure**
+
+### For Production Use
+
+- ✅ **Obtain certificates from your organization's Certificate Authority**
+- ✅ **Use certificates specifically issued for SCS access**
+- ✅ **Follow your organization's certificate management policies**
+- ✅ **Ensure certificates have proper Subject Alternative Names (SAN)**
+
+## 🐛 Common Issues
+
+### Certificate Not Trusted Error
+
+```json
+{
+  "error": "x509: certificate signed by unknown authority"
+}
+```
+
+**Cause**: SCS server doesn't trust your self-signed CA  
+**Solution**: Obtain production certificates from authorized CA
+
+### Connection Refused
+
+```json
+{
+  "error": "connection refused"
+}
+```
+
+**Cause**: Network access or incorrect endpoint  
+**Solution**: Verify network connectivity and environment variables
+
+### Certificate Expired
+
+```bash
+# Check certificate validity
+openssl x509 -in certificates/client.pem -dates -noout
+```
+
+**Solution**: Regenerate certificates with longer validity period
+
+## 📚 Additional Resources
+
+- [OpenSSL Documentation](https://www.openssl.org/docs/)
+- [Kubernetes Certificate Management](https://kubernetes.io/docs/concepts/cluster-administration/certificates/)
+- [TLS/SSL Best Practices](https://wiki.mozilla.org/Security/Server_Side_TLS)
+
+## 🤝 Support
+
+For production certificate requests and SCS access:
+1. Contact your platform team
+2. Follow your organization's certificate request process
+3. Ensure proper authorization for environment access
 
 ---
 
-This documentation provides a comprehensive overview of the Agentforce Messaging repository architecture and flow. For specific implementation details, refer to the individual component files and their associated tests.
+**Note**: This guide is for development and testing purposes. Always follow your organization's security policies for production deployments.
