@@ -12,9 +12,9 @@
 
 Successfully containerized Microsoft Teams Employee App using Salesforce Container Infrastructure (SFCI) with automated CI/CD pipeline. Docker images are now building and pushing to Salesforce's internal registry through Strata automation.
 
-**Status**: ✅ SFCI Containerization Complete  
-**Pipeline**: ✅ Fully Functional  
-**Docker Images**: ✅ Building Successfully  
+**Status**: SFCI Containerization Complete  
+**Pipeline**: Fully Functional  
+**Docker Images**: Building Successfully  
 
 ---
 
@@ -108,14 +108,14 @@ EXPOSE 8080
 
 ## Results Achieved
 
-### ✅ Successful Outcomes
+### Successful Outcomes
 1. **Docker Images Built**: Successfully containerized application
 2. **Registry Push**: Images available at `docker.repo.local.sfdc.net/sfci/msteams/msteams-employee-app-demo`
 3. **Automated Pipeline**: Full CI/CD automation through Strata
 4. **Integration Tests**: All tests passing
 5. **mTLS Ready**: Certificate mount paths configured
 
-### 📊 Pipeline Performance
+### Pipeline Performance
 - **Average Build Time**: ~7 minutes total
 - **Success Rate**: 100% after configuration optimization
 - **Artifact Size**: Optimized multi-stage build
@@ -126,8 +126,8 @@ EXPOSE 8080
 ## Lessons Learned
 
 ### SFCI vs Falcon Distinction
-- **SFCI**: Docker containerization and registry management (✅ Complete)
-- **Falcon**: Deployment platform requiring formal approvals (⏳ Future phase)
+- **SFCI**: Docker containerization and registry management (Complete)
+- **Falcon**: Deployment platform requiring formal approvals (Future phase)
 
 ### Manual vs Automated Process
 - **Manual BOM Creation**: Incorrect approach, caused validation failures
@@ -144,17 +144,17 @@ EXPOSE 8080
 ## Current Status
 
 ### Completed
-- ✅ **SFCI Containerization**: Fully operational
-- ✅ **Docker Build Pipeline**: Automated and successful
-- ✅ **Registry Integration**: Images pushing successfully
-- ✅ **CI/CD Automation**: Strata pipeline functional
-- ✅ **Local Testing**: Docker images buildable locally
+- **SFCI Containerization**: Fully operational
+- **Docker Build Pipeline**: Automated and successful
+- **Registry Integration**: Images pushing successfully
+- **CI/CD Automation**: Strata pipeline functional
+- **Local Testing**: Docker images buildable locally
 
 ### Pending (Future Phase)
-- ⏳ **Falcon Service Creation**: Official request needed
-- ⏳ **Team Registration**: Requires DevOps/Falcon admin involvement
-- ⏳ **Deployment Approvals**: FD, FI, CELL approval workflow
-- ⏳ **Production Deployment**: Main branch deployment strategy
+- **Falcon Service Creation**: Official request needed
+- **Team Registration**: Requires DevOps/Falcon admin involvement
+- **Deployment Approvals**: FD, FI, CELL approval workflow
+- **Production Deployment**: Main branch deployment strategy
 
 ---
 
@@ -199,6 +199,41 @@ msteams-employee-app/
 
 ---
 
+## Step-by-Step Progress Summary
+
+**A → B → C Format:**
+
+1. **Setup Strata** → **Configure .strata.yml** → **Pipeline Created**
+
+2. **Docker Issues** → **Fix tsc/npm errors** → **Build Working**
+
+3. **Registry Auth** → **Update registry URLs** → **SFCI Access**
+
+4. **Nexus Auth** → **Fix npm authentication** → **Dependencies Resolved**
+
+5. **Build Failures** → **Remove postinstall scripts** → **Clean Build**
+
+6. **Add Falcon Config** → **Create BOM files manually** → **Validation Errors**
+
+7. **Team Registration** → **Try multiple team names** → **All Teams 404**
+
+8. **Remove Falcon** → **Test SFCI only** → **Pipeline SUCCESS**
+
+9. **Local Testing** → **Build Docker locally** → **Image Created**
+
+10. **Understanding** → **Learn Falcon vs SFCI** → **Process Clarified**
+
+**Final Status:**
+- SFCI Containerization: COMPLETE
+- Docker Build/Push: WORKING 
+- Strata Pipeline: SUCCESS
+- Falcon Deployment: Needs Official Process
+
+**Key Learning:**
+Manual BOM → Should be auto-generated → Official approval needed
+
+---
+
 ## Contact Information
 
 **Primary Contact**: Saikrishna Kakumanu (saikrishna.kakumanu@salesforce.com)  
@@ -221,6 +256,12 @@ msteams-employee-app/
 - **Security**: No critical vulnerabilities detected
 - **Performance**: Optimized multi-stage Docker build
 - **Reliability**: 100% pipeline success rate after optimization
+
+### Falcon Approval Process (For Future Reference)
+- **FD (Falcon Deploy)**: Deployment system approval
+- **FI (Falcon Infrastructure)**: Infrastructure capacity approval  
+- **CELL (Falcon Cell)**: Regional placement approval
+- **Process**: Official service request → Team registration → Approvals → Auto-generated configs
 
 ---
 
