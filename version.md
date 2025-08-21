@@ -41,14 +41,14 @@ MINOR=$(echo "${VERSION}"|cut -d. -f2)
 {
   "scripts": {
     "build": "tsc && vite build && npm run create-buildinfo",
-    "create-buildinfo": "node -e \"const pkg = require('./package.json'); const fs = require('fs'); fs.writeFileSync('dist/BUILDINFO.json', JSON.stringify({version: pkg.version}, null, 2));\""
+    "create-buildinfo": "node -e \"const pkg = require('./package.json'); const fs = require('fs'); const now = new Date(); const timestamp = now.toISOString().slice(0,16).replace(/[-T:]/g, '').replace(/[:.]/g, ''); const buildNumber = process.env.BUILD_NUMBER || Math.floor(now.getTime() / 1000); const autoVersion = pkg.version + '-' + timestamp + '-' + buildNumber; fs.writeFileSync('dist/BUILDINFO.json', JSON.stringify({version: autoVersion, baseVersion: pkg.version, buildTime: now.toISOString(), buildNumber: buildNumber}, null, 2));\""
   }
 }
 ```
 
-### 2. **No Changes to `docker-entrypoint.sh`**
+### 2. **Enhanced with Automatic Versioning**
 
-**The `docker-entrypoint.sh` script remains exactly the same:**
+**The `docker-entrypoint.sh` script remains exactly the same, but now gets richer version data:**
 ```bash
 #!/bin/bash
 
@@ -89,7 +89,10 @@ tsc && vite build && npm run create-buildinfo
   ↓
 Creates dist/BUILDINFO.json with content:
 {
-  "version": "0.1.0"
+  "version": "0.1.0-202508210452-1755751925",
+  "baseVersion": "0.1.0",
+  "buildTime": "2025-08-21T04:52:05.005Z",
+  "buildNumber": 1755751925
 }
 ```
 
@@ -128,10 +131,39 @@ VERSION: 0.1.0, MAJOR: 0, MINOR: 1
 - ✅ GitHub workflow already runs `npm run build` (line 30)
 - ✅ Both will now automatically create `BUILDINFO.json`
 
+## 🕒 **Automatic Versioning System**
+
+### **Version Format:**
+```
+{baseVersion}-{timestamp}-{buildNumber}
+Example: "0.1.0-202508210452-1755751925"
+```
+
+### **Components:**
+- **Base Version**: From `package.json` (e.g., "0.1.0")
+- **Timestamp**: Build time in format `YYYYMMDDHHMM` (e.g., "202508210452")
+- **Build Number**: Unix timestamp or CI `BUILD_NUMBER` env var (e.g., "1755751925")
+
+### **Benefits:**
+- ✅ **Unique versions** for every build/deploy
+- ✅ **Traceable builds** with exact timestamp
+- ✅ **CI/CD compatible** (uses BUILD_NUMBER if available)
+- ✅ **Major.Minor extraction** still works (MAJOR=0, MINOR=1)
+
+### **BUILDINFO.json Content:**
+```json
+{
+  "version": "0.1.0-202508210452-1755751925",    // Used by docker-entrypoint.sh
+  "baseVersion": "0.1.0",                       // Original package.json version
+  "buildTime": "2025-08-21T04:52:05.005Z",      // ISO timestamp
+  "buildNumber": 1755751925                     // Unique build identifier
+}
+```
+
 ## 📁 **Files Changed**
 
-1. **`package.json`** - Added BUILDINFO.json creation to build process
-2. **`docker-entrypoint.sh`** - **NO CHANGES** (the existing script now works correctly)
+1. **`package.json`** - Enhanced build process with automatic timestamp-based versioning
+2. **`docker-entrypoint.sh`** - **NO CHANGES** (the existing script now works with unique versions)
 
 ## 🎯 **Impact**
 
@@ -141,9 +173,10 @@ VERSION: 0.1.0, MAJOR: 0, MINOR: 1
 - ❌ Potential deployment issues
 
 ### After Fix:
-- ✅ SCS paths: `SERVICE_NAME://HASH/0.1/filename`
-- ✅ Version variables populated correctly
-- ✅ Proper version-based deployment paths
+- ✅ SCS paths: `SERVICE_NAME://HASH/0.1/filename` (MAJOR.MINOR extracted from unique version)
+- ✅ Version variables populated correctly with unique timestamp-based versions
+- ✅ Proper version-based deployment paths with build traceability
+- ✅ Every build gets a unique version for better tracking
 
 ## 🚀 **Deployment**
 
